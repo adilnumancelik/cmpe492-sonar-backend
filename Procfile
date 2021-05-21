@@ -1,1 +1,1 @@
-web: gunicorn sonar.wsgi --log-file -
+web: gunicorn sonar_backend.wsgi --log-file -

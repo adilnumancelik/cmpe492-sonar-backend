@@ -2,7 +2,7 @@
 
 Production deployment to [https://boun-sonar.herokuapp.com/](https://boun-sonar.herokuapp.com/)
 
-## Getting Started
+## Getting Started on Local
 
 First, create a virtual environment and activate it:
 
@@ -22,6 +22,12 @@ Then, install the requirements:
 pip install -r requirements.txt
 ```
 
+Create a .env file and add this line:
+```bash
+DATABASE_URL=sqlite:///db.sqlite3
+```
+This will make sure that application connects to a local SQLLite database.
+
 Finally run the server by:
 ```bash
 python manage.py runserver
@@ -31,7 +37,13 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) with your browser to see t
 
 
 ## Deployment
-
 - `master` is the production branch
 
-Pushing to `master` will make Heroku automatically deploy the production app https://boun-sonar.herokuapp.com/
+Pushing to `master` will not make Heroku automatically deploy the production app. 
+To push to Heroku you need to run:
+```bash
+git push heroku master
+```
+and https://boun-sonar.herokuapp.com/ will be updated.
+
+A Postgres database is connected to production code.

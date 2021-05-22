@@ -24,9 +24,9 @@ pip install -r requirements.txt
 
 Create a .env file and add this line:
 ```bash
-DATABASE_URL=sqlite:///db.sqlite3
+DATABASE_URL=postgres://{db username}:{db password}@{endpoint url}:{port}/{development db name}
 ```
-This will make sure that application connects to a local SQLLite database.
+This will make sure that application connects to our development PostgreSQL database.
 
 Finally run the server by:
 ```bash
@@ -39,11 +39,8 @@ Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) with your browser to see t
 ## Deployment
 - `master` is the production branch
 
-Pushing to `master` will not make Heroku automatically deploy the production app. 
-To push to Heroku you need to run:
-```bash
-git push heroku master
-```
-and https://boun-sonar.herokuapp.com/ will be updated.
+Pushing to `master` will make Heroku automatically deploy the production app. 
 
-A Postgres database is connected to production code.
+Visit [https://boun-sonar.herokuapp.com/swagger/](https://boun-sonar.herokuapp.com/swagger/) to see the documentation.
+
+Production database is a PostgreSQL database.

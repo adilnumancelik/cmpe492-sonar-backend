@@ -1,2 +1,2 @@
 web: gunicorn sonar_backend.wsgi --log-file -
-release: ./release-tasks.sh
+release: chmod u+x release.sh && ./release-tasks.sh

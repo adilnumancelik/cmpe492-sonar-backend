@@ -9,10 +9,10 @@ from rest_framework import viewsets
 from rest_framework import permissions
 import requests
 
-
+# TODO Implement Fethcer Endpoint
 @api_view(['GET'])
 def fetcher_view(request):
-    x = {'name': 'somevalue', 'value': 'aaa'}
+    x = {'name': 'asomevalue', 'value': 'aaa'}
     requests.post("https://boun-sonar.herokuapp.com/dummies/", data = x)
     return Response('Ok')
 

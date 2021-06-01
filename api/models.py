@@ -1,5 +1,6 @@
 # Create your models here.
 from django.db import models
+from django.db.models.query import ModelIterable
 
 ARTICLE_LIST_STATUS = ["phase_1", "phase_2", "done"]
 ARTICLE_LIST_STATUS_CHOICES = [(ARTICLE_LIST_STATUS[i], str(i)) for i in range(len(ARTICLE_LIST_STATUS))]
@@ -22,8 +23,15 @@ class Dummy(models.Model):
         ordering = ['name']
 
 
+class User(models.Model):
+    email = models.CharField(max_length=256, null=False, blank=False)
+    first_name = models.CharField(max_length=100, null=False, blank=False)
+    last_name = models.CharField(max_length=100, null=False, blank=False)
+    register_date = models.DateField(null=False, auto_now_add=True)
+
+
 class ArticleList(models.Model):
-    user_id = models.BigIntegerField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length = 100, blank=False, default='Article List')
     created_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=ARTICLE_LIST_STATUS_CHOICES,
@@ -36,7 +44,7 @@ class ArticleList(models.Model):
 
 
 class ArticleListToDOI(models.Model):
-    article_list_id = models.BigIntegerField()
+    article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     doi = models.CharField(max_length = 100)
 
 
@@ -59,7 +67,7 @@ class Article(models.Model):
 class Node(models.Model):
     node_type = models.CharField(choices=NODE_TYPE_CHOICES,
                               default="Article", max_length=50)
-    article_list_id = models.BigIntegerField()
+    article_list = article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     specific_information = models.CharField(max_length = 10000)
 
 
@@ -69,5 +77,5 @@ class Edge(models.Model):
     edge_type = models.CharField(default="", max_length=100)
     from_node = models.ForeignKey(Node, related_name='out_edge', on_delete=models.CASCADE)
     to_node = models.ForeignKey(Node, related_name='in_edge', on_delete=models.CASCADE)
-    article_list_id = models.BigIntegerField()
+    article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     specific_information = models.CharField(max_length = 10000)

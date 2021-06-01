@@ -47,5 +47,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('hello/', views.main_view),
-    path('fetch/', fetcher.fetcher_view)
+    path('fetch/', fetcher.fetcher_view),
+    path('article-lists/', views.article_lists),
+    path('article-list/<int:list_id>', views.article_list),
+    path('article-list/<int:list_id>/graph', views.get_graph)
 ]

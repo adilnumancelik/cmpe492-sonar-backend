@@ -67,7 +67,7 @@ class Article(models.Model):
 class Node(models.Model):
     node_type = models.CharField(choices=NODE_TYPE_CHOICES,
                               default="Article", max_length=50)
-    article_list = article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
+    article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     specific_information = models.CharField(max_length = 10000)
 
 

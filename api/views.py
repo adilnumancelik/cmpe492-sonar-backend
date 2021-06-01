@@ -51,6 +51,81 @@ def article_list(request, list_id):
 
     return Response(serializer.data)
 
+@api_view(['Post'])
+def create_article_list(request):
+    '''
+    Could not make swagger work here. 
+    This is the request model:
+    {
+    "title" : "Name of article list",
+    "user_id" : (Id of the owner user),
+    "doi_list": [
+        "(DOI 1)",
+        "(DOI 2)"
+        ...
+        ]
+    }
+    '''
+    
+    doi_list = request.data.get('doi_list')
+    number_of_articles = len(doi_list)
+    user = User.objects.filter(pk= request.data.get('user_id')).first()
+    if user == None:
+        return Response("There is no such user.", status=status.HTTP_400_BAD_REQUEST)
+
+
+    article_list_data = {
+        'title': request.data.get('title'), 
+        'number_of_articles': number_of_articles,
+        'user': user.pk
+    }
+
+    serializer = ArticleListSerializer(data=article_list_data)
+    new_article_list = ArticleList()
+    if serializer.is_valid():
+        new_article_list = serializer.save()
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    article_list_id = new_article_list.id
+    
+    for doi in doi_list:
+        doi_data = {
+            'article_list': article_list_id,
+            'doi': doi
+        }
+        doi_serializer = ArticleListToDOISerializer(data = doi_data)
+        if doi_serializer.is_valid():
+            doi_serializer.save()
+        else:
+            return Response(doi_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        article_data = {
+            'doi': doi
+        }
+        existingArticle = Article.objects.filter(doi = doi)
+        if len(existingArticle) > 0:
+            print(existingArticle)
+            continue
+
+        article_serializer = ArticleSerializer(data = article_data)
+        if article_serializer.is_valid():
+            article_serializer.save()
+        else:
+            return Response(article_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['Delete'])
+def delete_article_list(request, list_id):
+    #TODO Set permissions!!!
+    article_to_dois = ArticleListToDOI.objects.filter(pk = list_id)
+    article_list = ArticleList.objects.filter(pk = list_id)
+    article_to_dois.delete()
+    article_list.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
 @api_view(['GET'])
 def get_graph(request, list_id):
     article_list_id = list_id
@@ -75,8 +150,6 @@ def get_graph(request, list_id):
 
     return Response(serializer.data)
     
-
-
 
 class DummyViewSet(viewsets.ModelViewSet):
 

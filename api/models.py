@@ -53,12 +53,12 @@ class Article(models.Model):
                               default="to_be_fetched", max_length=20)
     title = models.CharField(max_length = 100, blank=False, default='')
     doi = models.CharField(max_length = 100)
-    raw_data = models.CharField(max_length = 10000)
+    raw_data = models.CharField(max_length = 10000, null = True, blank = True)
     created_date = models.DateTimeField(auto_now_add=True)
-    fetched_date = models.DateTimeField(blank=True)
-    processed_date = models.DateTimeField(blank=True)
+    fetched_date = models.DateTimeField(null=True)
+    processed_date = models.DateTimeField(null=True)
     try_count = models.IntegerField(default = 0)
-    other_stuff = models.CharField(max_length = 10000)
+    other_stuff = models.CharField(max_length = 10000, null = True, blank = True)
 
     class Meta:
         ordering = ['created_date']

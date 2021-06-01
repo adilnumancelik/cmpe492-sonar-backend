@@ -111,3 +111,7 @@ class ArticleListResponseSerializer(serializers.ModelSerializer):
             'message': message
         }
 
+class ArticleListToDOISerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleListToDOI
+        fields = '__all__'

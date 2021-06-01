@@ -50,5 +50,7 @@ urlpatterns = [
     path('fetch/', fetcher.fetcher_view),
     path('article-lists/', views.article_lists),
     path('article-list/<int:list_id>', views.article_list),
-    path('article-list/<int:list_id>/graph', views.get_graph)
+    path('article-list/<int:list_id>/delete/', views.delete_article_list),
+    path('article-list/<int:list_id>/graph', views.get_graph),
+    path('article-list/create/', views.create_article_list)
 ]

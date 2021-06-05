@@ -1,3 +1,4 @@
+from api.queue_util import push_to_queue
 import api
 from django.shortcuts import render
 from rest_framework import status
@@ -8,6 +9,8 @@ from rest_framework import viewsets
 from api.serializers import *
 from rest_framework import viewsets
 from rest_framework import permissions
+
+FETCHER_QUEUE_NAME = 'fetcher_queue'
 
 @api_view(['GET'])
 def main_view(request):
@@ -113,6 +116,12 @@ def create_article_list(request):
             article_serializer.save()
         else:
             return Response(article_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Push the dois to fetcher queue
+    try:
+        push_to_queue(FETCHER_QUEUE_NAME, doi_list)
+    except:
+        return Response("Failed to push to queue. Delete the recently created article list and create a new one.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 

@@ -19,7 +19,7 @@ from django.conf.urls import url
 from rest_framework.routers import DefaultRouter
 from api.views import DummyViewSet
 from api import views
-from api import fetcher
+from api import pubmed
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -47,10 +47,11 @@ urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('hello/', views.main_view),
-    path('fetch/', fetcher.fetcher_view),
     path('article-lists/', views.article_lists),
     path('article-list/<int:list_id>', views.article_list),
     path('article-list/<int:list_id>/delete/', views.delete_article_list),
     path('article-list/<int:list_id>/graph', views.get_graph),
-    path('article-list/create/', views.create_article_list)
+    path('article-list/create/', views.create_article_list),
+    path('pubmed-fetch/<path:DOI>', pubmed.pubmed_fetcher_view),
+    path('pubmed-process/<path:DOI>', pubmed.pubmed_processor_view)
 ]

@@ -8,11 +8,11 @@ ARTICLE_LIST_STATUS_CHOICES = [(ARTICLE_LIST_STATUS[i], str(i)) for i in range(l
 ARTICLE_STATUS = ["to_be_fetched", "to_be_processed", "done"]
 ARTICLE_STATUS_CHOICES = [(ARTICLE_STATUS[i], str(i)) for i in range(len(ARTICLE_STATUS))]
 
-NODE_TYPE = ["Article", "Author", "Affiliation", "Country", "Topic"]
+NODE_TYPE = ["author", "article", "topic"]
 NODE_TYPE_CHOICES = [(NODE_TYPE[i], str(i)) for i in range(len(NODE_TYPE))]
 
 # TODO These edge types will change. For now do not constrain edge type to these.
-EDGE_TYPE = ["Co-Authorship", "Co-Affiliation", "Author of"]
+EDGE_TYPE = ["coauthor", "author_of","topic_of", "author_cotopic", "article_cotopic"]
 EDGE_TYPE_CHOICES = [(EDGE_TYPE[i], str(i)) for i in range(len(EDGE_TYPE))]
 
 class Dummy(models.Model):
@@ -68,14 +68,14 @@ class Article(models.Model):
 
 class Node(models.Model):
     node_type = models.CharField(choices=NODE_TYPE_CHOICES,
-                              default="Article", max_length=50)
+                              default="article", max_length=50)
     article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
+    object_key = models.CharField(max_length=200, default="nokey")
     specific_information = models.CharField(max_length = 10000)
 
 
 class Edge(models.Model):
-    # For now do not constrain edge types.
-    # edge_type = models.CharField(choices=EDGE_TYPE_CHOICES, default="Co-Authorship", max_length=50)
+    edge_type = models.CharField(choices=EDGE_TYPE_CHOICES, default="coauthor", max_length=50)
     edge_type = models.CharField(default="", max_length=100)
     from_node = models.ForeignKey(Node, related_name='out_edge', on_delete=models.CASCADE)
     to_node = models.ForeignKey(Node, related_name='in_edge', on_delete=models.CASCADE)

@@ -10,20 +10,37 @@ class DummySerializer(serializers.HyperlinkedModelSerializer):
         model = Dummy
         fields = ['name', 'value']
 
-class NodeSerializer(serializers.ModelSerializer):
+class NodeGetSerializer(serializers.ModelSerializer):
     specific_information = serializers.SerializerMethodField('get_specific_info')
     class Meta: 
         model = Node
         fields = '__all__'
-
+    
     def get_specific_info(self, obj):
-        #return json.loads(obj.specific_information)
-        return obj.specific_information
+        return json.loads(obj.specific_information)
+        #return obj.specific_information
+
+
+class NodeSerializer(serializers.ModelSerializer):
+    class Meta: 
+        model = Node
+        fields = '__all__'
+    
 
 class EdgeSerializer(serializers.ModelSerializer):
     class Meta: 
         model = Edge
         fields = '__all__'
+
+class EdgeGetSerializer(serializers.ModelSerializer):
+    specific_information = serializers.SerializerMethodField('get_specific_info')
+    class Meta: 
+        model = Edge
+        fields = '__all__'
+
+    def get_specific_info(self, obj):
+        return json.loads(obj.specific_information)
+        #return obj.specific_information
 
 
 class GraphSerializer(serializers.ModelSerializer):
@@ -38,13 +55,13 @@ class GraphSerializer(serializers.ModelSerializer):
     def get_nodes(self, obj):
         data = []
         for node in obj['nodes']:
-            data.append(NodeSerializer(node).data)
+            data.append(NodeGetSerializer(node).data)
         return data
     
     def get_edges(self, obj):
         data = []
         for edge in obj['edges']:
-            data.append(EdgeSerializer(edge).data)
+            data.append(EdgeGetSerializer(edge).data)
         return data
 
     def get_status(self, obj):

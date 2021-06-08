@@ -51,6 +51,7 @@ urlpatterns = [
     path('article-list/<int:list_id>', views.article_list),
     path('article-list/<int:list_id>/delete/', views.delete_article_list),
     path('article-list/<int:list_id>/graph', views.get_graph),
+    path('article-list/<int:list_id>/delete-graph', views.delete_graph),
     path('article-list/create/', views.create_article_list),
     path('pubmed-fetch/<path:DOI>', pubmed.pubmed_fetcher_view),
     path('pubmed-process/<path:DOI>', pubmed.pubmed_processor_view)

@@ -131,8 +131,12 @@ def delete_article_list(request, list_id):
     #TODO Set permissions!!!
     article_to_dois = ArticleListToDOI.objects.filter(pk = list_id)
     article_list = ArticleList.objects.filter(pk = list_id)
+    nodes = Node.objects.filter(article_list = list_id)
+    edges = Edge.objects.filter(article_list = list_id)
     article_to_dois.delete()
     article_list.delete()
+    nodes.delete()
+    edges.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
@@ -156,9 +160,17 @@ def get_graph(request, list_id):
             'edges': edges
         }, context = { 'is_successful': True, 'message': ""}
     )
-
+    #return JsonResponse(serializer.data, safe=False,json_dumps_params={'ensure_ascii':False})
     return Response(serializer.data)
-    
+
+@api_view(['Delete'])
+def delete_graph(request, list_id):
+    #TODO Set permissions!!!
+    nodes = Node.objects.filter(article_list = list_id)
+    edges = Edge.objects.filter(article_list = list_id)
+    nodes.delete()
+    edges.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)    
 
 class DummyViewSet(viewsets.ModelViewSet):
 

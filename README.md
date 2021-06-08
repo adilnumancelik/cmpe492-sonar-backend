@@ -25,6 +25,7 @@ pip install -r requirements.txt
 Create a .env file and add this line:
 ```bash
 DATABASE_URL=postgres://{db username}:{db password}@{endpoint url}:{port}/{development db name}
+CLOUDAMQP_URL = {queue endpoint}
 ```
 This will make sure that application connects to our development PostgreSQL database.
 

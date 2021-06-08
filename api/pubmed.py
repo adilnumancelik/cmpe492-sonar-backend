@@ -1,3 +1,4 @@
+from api.views import article_list
 from django.http.response import HttpResponse
 from django.shortcuts import render
 from rest_framework import status
@@ -5,13 +6,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from api.models import Dummy
 from rest_framework import viewsets
-from api.serializers import ArticleSerializer, DummySerializer
+from api.serializers import *
 from rest_framework import viewsets
 from rest_framework import permissions
 import requests
 import datetime
 import xml.etree.ElementTree as ET
-from api.models import Article
+import json
+from api.models import *
 from api.queue_util import push_to_queue
 
 # To search doi url: PUBMED_DOI_SEARCH_BASE + DOI
@@ -50,7 +52,8 @@ def pubmed_fetcher_view(request, DOI):
     # Get article id from search result
     try:
         root = ET.fromstring(search_raw)
-        article_id = root[3][0].text
+        article_id = root.findall("./IdList/Id")[0].text
+        #article_id = root[3][0].text
     except:
         if can_try:
             push_to_queue(FETCHER_QUEUE_NAME, doi_list)
@@ -82,6 +85,183 @@ def pubmed_fetcher_view(request, DOI):
 # Pubmed Processor Endpoint
 @api_view(['GET'])
 def pubmed_processor_view(request, DOI):
-    # TODO: Implement the processor.
-    x = 1
+    article = Article.objects.filter(doi = DOI).first()
+    errors = DOI
+    raw_1 = article.pubmed_raw_data1
+    raw_2 = article.pubmed_raw_data2
+    
+    root = ET.fromstring(raw_1)
+    root2 = ET.fromstring(raw_2)
+
+    # Get publication date. If this is not possible get completion date. If this is not possible assign default date.
+    try:
+        year = root2.findall("./PubmedArticle/MedlineCitation/Article/ArticleDate/Year")[0].text  
+        month = root2.findall("./PubmedArticle/MedlineCitation/Article/ArticleDate/Month")[0].text  
+        day = root2.findall("./PubmedArticle/MedlineCitation/Article/ArticleDate/Day")[0].text
+        pubdate = datetime.datetime(int(year), int(month), int(day))
+    except:
+        try:
+            year = root2.findall("./PubmedArticle/MedlineCitation/DateCompleted/Year")[0].text  
+            month = root2.findall("./PubmedArticle/MedlineCitation/DateCompleted/Month")[0].text  
+            day = root2.findall("./PubmedArticle/MedlineCitation/DateCompleted/Day")[0].text
+            pubdate = datetime.datetime(int(year), int(month), int(day))
+        except:
+            pubdate = datetime.datetime(1900,1,1)
+    
+    
+    # Get article title. If this is not possible assign default date. 
+    try:
+        title = root.findall("./DocSum/Item/[@Name='Title']")[0].text   
+    except:
+        title = "Article " + DOI
+
+
+    # Get topics. If this is not possible topics can be empty. 
+    try:
+        topics_raw = root2.findall("./PubmedArticle/MedlineCitation/MeshHeadingList/MeshHeading/DescriptorName")
+    except:
+        topics_raw = []
+    
+    topic_list = []
+    for t in topics_raw:
+        topic_list.append(t.text)
+
+    authors = root.findall("./DocSum/Item/[@Name='AuthorList']")[0]
+
+    # Get authors.
+    try:
+        authors2 = root2.findall("./PubmedArticle/MedlineCitation/Article/AuthorList/Author")
+    except:
+        authors2 = []
+
+    author_list = []
+    for author2 in authors2:
+        author_list.append(author2.findall("./ForeName")[0].text+ " "+author2.findall("./LastName")[0].text)
+
+    '''
+    Create article Nodes:
+        # Find all article lists that contain the article with this doi
+        # Find all nodes that belong to this article list and contain the article with this doi
+        # Create the missing nodes for all article lists that contain the article with this doi
+    '''
+    article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
+
+    for article_to_doi in article_to_dois:
+        existing_article_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = DOI, node_type = 'article').first()
+        if existing_article_node is None:
+            node_data = {
+                'node_type': 'article',
+                'article_list': article_to_doi.article_list.pk,
+                'object_key': DOI,
+                'specific_information': json.dumps({})
+            }
+            node_serializer = NodeSerializer(data = node_data)
+
+            if node_serializer.is_valid():
+                node_serializer.save()
+            else:
+                return Response(node_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    '''
+    Create author Nodes:
+        # Find all aritcle lists that contain the author
+        # Find all nodes that belong to this article list and contain the author
+        # Create the missing nodes for all article lists that contain the author
+        # Perform this for all authors in author list
+    '''
+    for author in author_list:
+        for article_to_doi in article_to_dois:
+            existing_author_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = author, node_type = 'author').first()
+            if existing_author_node is None:
+                node_data = {
+                    'node_type': 'author',
+                    'article_list': article_to_doi.article_list.pk,
+                    'object_key': author,
+                    'specific_information': json.dumps({})
+                }
+                node_serializer = NodeSerializer(data = node_data)
+                if node_serializer.is_valid():
+                    node_serializer.save()
+                else:
+                    return Response(node_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    '''
+    Create topic Nodes:
+        # Find all aritcle lists that contain the author
+        # Find all nodes that belong to this article list and contain the topic
+        # Create the missing nodes for all article lists that contain the topic
+        # Perform this for all topic in topic list
+    '''
+    for topic in topic_list:
+        for article_to_doi in article_to_dois:
+            existing_topic_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = topic, node_type = 'topic').first()
+            if existing_topic_node is None:
+                node_data = {
+                    'node_type': 'topic',
+                    'article_list': article_to_doi.article_list.pk,
+                    'object_key': topic,
+                    'specific_information': json.dumps({})
+                }
+                node_serializer = NodeSerializer(data = node_data)
+                if node_serializer.is_valid():
+                    node_serializer.save()
+                else:
+                    return Response(node_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    '''
+    Create author_of edges:
+        # Find all aritcle lists that contain the article with this doi
+        # Find all edges that belong to this article list and between authors of this article and this article
+        # Create the missing edges for all article lists that contain the article with this doi and authors of this article
+    '''
+    for article_to_doi in article_to_dois:
+        for author in author_list:
+            author_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = author, node_type = 'author').first()
+            article_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = DOI, node_type = 'article').first()
+            existing_edge = Edge.objects.filter(edge_type = "author_of", from_node = author_node, to_node = article_node).first()
+            if existing_edge is None:
+                edge_data = {
+                        'edge_type': 'author_of',
+                        'from_node': author_node.pk,
+                        'to_node':article_node.pk,
+                        'article_list':article_to_doi.article_list.pk,
+                        'specific_information': json.dumps({ 'author_name': author, 'DOI': DOI })
+                    }
+                edge_serializer = EdgeSerializer(data = edge_data)
+                if edge_serializer.is_valid():
+                    edge_serializer.save()
+                else:
+                    return Response(edge_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    '''
+    Create topic_of edges:
+        # Find all article lists that contain the article with this doi
+        # Find all edges that belong to this article list and between topics of this article and this article
+        # Create the missing edges for all article lists that contain the article with this doi and topics of this article
+    '''
+    for article_to_doi in article_to_dois:
+        article_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = DOI, node_type = 'article').first()
+        for topic in topic_list:
+            topic_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = topic, node_type = 'topic').first()
+            existing_topic_of_edge = Edge.objects.filter(article_list = article_to_doi.article_list, from_node = article_node, to_node = topic_node, edge_type = 'topic_of').first()
+            if existing_topic_of_edge is None:
+                edge_data = {
+                    'edge_type': 'topic_of',
+                    'from_node': article_node.pk,
+                    'to_node':topic_node.pk,
+                    'article_list':article_to_doi.article_list.pk,
+                    'specific_information': json.dumps({ 'DOI': DOI, 'topic_name': topic })
+                }
+                edge_serializer = EdgeSerializer(data = edge_data)
+                if edge_serializer.is_valid():
+                    edge_serializer.save()
+                else:
+                    return Response(edge_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    article.title = title
+    article.created_date = pubdate
+    article.processed_date = datetime.datetime.now()
+    article.save()
+
     return Response(DOI, status=status.HTTP_200_OK)

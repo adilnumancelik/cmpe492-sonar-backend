@@ -22,7 +22,6 @@ class Dummy(models.Model):
     class Meta:
         ordering = ['name']
 
-
 class User(models.Model):
     email = models.CharField(max_length=256, null=False, blank=False)
     first_name = models.CharField(max_length=100, null=False, blank=False)
@@ -31,7 +30,7 @@ class User(models.Model):
 
 
 class ArticleList(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    userId = models.CharField(max_length=200, blank=False, default='')
     title = models.CharField(max_length = 100, blank=False, default='Article List')
     created_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=ARTICLE_LIST_STATUS_CHOICES,

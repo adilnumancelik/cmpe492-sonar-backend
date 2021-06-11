@@ -9,17 +9,55 @@ from rest_framework import viewsets
 from api.serializers import *
 from rest_framework import viewsets
 from rest_framework import permissions
+from functools import wraps
+import jwt
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from api.utils import *
 
 FETCHER_QUEUE_NAME = 'fetcher_queue'
 
+def get_token_auth_header(request):
+    """Obtains the Access Token from the Authorization Header
+    """
+    auth = request.META.get("HTTP_AUTHORIZATION", None)
+    parts = auth.split()
+    token = parts[1]
+
+    return token
+
+def requires_scope(required_scope):
+    """Determines if the required scope is present in the Access Token
+    Args:
+        required_scope (str): The scope required to access the resource
+    """
+    def require_scope(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            token = get_token_auth_header(args[0])
+            decoded = jwt.decode(token, verify=False)
+            if decoded.get("scope"):
+                token_scopes = decoded["scope"].split()
+                for token_scope in token_scopes:
+                    if token_scope == required_scope:
+                        return f(*args, **kwargs)
+            response = JsonResponse({'message': 'You don\'t have access to this resource'})
+            response.status_code = 403
+            return response
+        return decorated
+    return require_scope
+
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def main_view(request):
+    token = get_token_auth_header(request)
     return Response('Hello World!')
 
 
 @api_view(['GET'])
 def article_lists(request):
-    lists = ArticleList.objects.all()
+    lists = ArticleList.objects.filter(userId = str(request.user))
     serializer = ArticleListResponseSerializer(
         lists,
         context = { 'is_successful': True,
@@ -34,10 +72,9 @@ def article_list(request, list_id):
     if article_list_id == None:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    article_list = ArticleList.objects.filter(pk=article_list_id).first()
+    article_list = ArticleList.objects.filter(pk=article_list_id, userId = str(request.user)).first()
     if article_list is None:
-        print('here')
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response('Article list is not found.', status=status.HTTP_404_NOT_FOUND)
     
     dois_in_list = ArticleListToDOI.objects.filter(article_list=article_list).all()
     articles = []
@@ -72,15 +109,12 @@ def create_article_list(request):
     
     doi_list = request.data.get('doi_list')
     number_of_articles = len(doi_list)
-    user = User.objects.filter(pk= request.data.get('user_id')).first()
-    if user == None:
-        return Response("There is no such user.", status=status.HTTP_400_BAD_REQUEST)
-
+    userId = str(request.user)
 
     article_list_data = {
         'title': request.data.get('title'), 
         'number_of_articles': number_of_articles,
-        'user': user.pk
+        'userId': userId
     }
 
     serializer = ArticleListSerializer(data=article_list_data)
@@ -122,15 +156,20 @@ def create_article_list(request):
         push_to_queue(FETCHER_QUEUE_NAME, doi_list)
     except:
         return Response("Failed to push to queue. Delete the recently created article list and create a new one.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['Delete'])
 def delete_article_list(request, list_id):
-    #TODO Set permissions!!!
+    if list_id == None:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    article_list = ArticleList.objects.filter(pk = list_id, userId = str(request.user))
+    if article_list is None:
+        return Response('Article list is not found.', status=status.HTTP_404_NOT_FOUND)
+    
     article_to_dois = ArticleListToDOI.objects.filter(pk = list_id)
-    article_list = ArticleList.objects.filter(pk = list_id)
     nodes = Node.objects.filter(article_list = list_id)
     edges = Edge.objects.filter(article_list = list_id)
     article_to_dois.delete()
@@ -148,8 +187,7 @@ def get_graph(request, list_id):
 
     article_list = ArticleList.objects.filter(pk=article_list_id).first()
     if article_list is None:
-        print('here')
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response('Article list is not found.', status=status.HTTP_404_NOT_FOUND)
 
     nodes = Node.objects.filter(article_list=article_list).all()
     edges = Edge.objects.filter(article_list=article_list).all()
@@ -165,7 +203,13 @@ def get_graph(request, list_id):
 
 @api_view(['Delete'])
 def delete_graph(request, list_id):
-    #TODO Set permissions!!!
+    if list_id == None:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    article_list = ArticleList.objects.filter(pk = list_id, userId = str(request.user))
+    if article_list is None:
+        return Response('Article list is not found.', status=status.HTTP_404_NOT_FOUND)
+
     nodes = Node.objects.filter(article_list = list_id)
     edges = Edge.objects.filter(article_list = list_id)
     nodes.delete()

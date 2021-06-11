@@ -2,7 +2,7 @@ from api.views import article_list
 from django.http.response import HttpResponse
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from api.models import Dummy
 from rest_framework import viewsets
@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 import json
 from api.models import *
 from api.queue_util import push_to_queue
+from rest_framework.permissions import AllowAny
 
 # To search doi url: PUBMED_DOI_SEARCH_BASE + DOI
 # To get article data url: PUBMED_GET_BY_ID_BASE + ID
@@ -29,11 +30,15 @@ PUBMED_PROCESSOR_QUEUE_NAME = 'pubmed_processor_queue'
 
 # Pubmed Fethcer Endpoint
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def pubmed_fetcher_view(request, DOI):
     # This will be used to push to queue.
     doi_list = [DOI]
     # Get the article with given doi.
     article = Article.objects.filter(doi = DOI).first()
+    if article is None:
+        return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
+
     can_try = article.try_count <= NUMBER_OF_TRIALS_ALLOWED
     
     # Increase the number of trials and save the article.
@@ -84,9 +89,12 @@ def pubmed_fetcher_view(request, DOI):
 
 # Pubmed Processor Endpoint
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def pubmed_processor_view(request, DOI):
     article = Article.objects.filter(doi = DOI).first()
-    errors = DOI
+    if article is None:
+        return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
+
     raw_1 = article.pubmed_raw_data1
     raw_2 = article.pubmed_raw_data2
     

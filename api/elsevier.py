@@ -24,10 +24,10 @@ PUBMED_FETCHER_QUEUE = 'pubmed_fetcher_queue'
 @permission_classes([AllowAny])
 def elsevier_fetcher_save(request):
     doi = request.data.get("doi")
-    status = request.data.get("status")
+    fetch_status = request.data.get("status")
     result = request.data.get("result")
 
-    if doi is None or status is None or result is None:
+    if doi is None or fetch_status is None or result is None:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     article = Article.objects.filter(doi=doi).first()
@@ -35,11 +35,11 @@ def elsevier_fetcher_save(request):
     if article is None:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    if status == 200:
+    if fetch_status == 200:
         article.raw_data = result
         article.fetched_date = datetime.now()
         article.save()
     
-    push_to_queue(PUBMED_FETCHER_QUEUE, doi)
+    push_to_queue(PUBMED_FETCHER_QUEUE, [doi])
 
     return Response(status=status.HTTP_200_OK)

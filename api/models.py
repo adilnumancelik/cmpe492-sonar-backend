@@ -54,7 +54,7 @@ class Article(models.Model):
     doi = models.CharField(max_length = 100)
     pubmed_raw_data1 = models.CharField(max_length = 100000, null = True, blank = True)
     pubmed_raw_data2 = models.CharField(max_length = 100000, null = True, blank = True)
-    raw_data = models.CharField(max_length = 100000, null = True, blank = True)
+    raw_data = models.CharField(max_length = 1000000, null = True, blank = True)
     created_date = models.DateTimeField(auto_now_add=True)
     fetched_date = models.DateTimeField(null=True)
     processed_date = models.DateTimeField(null=True)

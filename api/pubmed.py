@@ -26,7 +26,7 @@ PUBMED_GET_FULL_RECORD_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efe
 NUMBER_OF_TRIALS_ALLOWED = 3
 #TODO These can be added to environmental variables
 FETCHER_QUEUE_NAME = 'fetcher_queue'
-PUBMED_PROCESSOR_QUEUE_NAME = 'pubmed_processor_queue'
+PROCESSOR_QUEUE_NAME = 'processor_queue'
 
 # Pubmed Fethcer Endpoint
 @api_view(['GET'])
@@ -84,7 +84,7 @@ def pubmed_fetcher_view(request, DOI):
     article.save()
 
     # Push the fetched article's doi to Pubmed processor queue.
-    push_to_queue(PUBMED_PROCESSOR_QUEUE_NAME, doi_list)
+    push_to_queue(PROCESSOR_QUEUE_NAME, doi_list)
     return Response('Article is fetched from Pubmed.', status=status.HTTP_200_OK)
 
 # Pubmed Processor Endpoint

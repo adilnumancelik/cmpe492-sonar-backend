@@ -18,6 +18,7 @@ from api.models import *
 from api.queue_util import push_to_queue
 from rest_framework.permissions import AllowAny
 
+
 PUBMED_FETCHER_QUEUE = 'pubmed_fetcher_queue'
 
 @api_view(['POST'])

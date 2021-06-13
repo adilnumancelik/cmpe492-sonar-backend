@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from api.utils import *
 
-FETCHER_QUEUE_NAME = 'fetcher_queue'
+ELSEVIER_FETCHER_QUEUE_NAME = 'elsevier_fetcher_queue'
 
 def get_token_auth_header(request):
     """Obtains the Access Token from the Authorization Header
@@ -153,7 +153,7 @@ def create_article_list(request):
     
     # Push the dois to fetcher queue
     try:
-        push_to_queue(FETCHER_QUEUE_NAME, doi_list)
+        push_to_queue(ELSEVIER_FETCHER_QUEUE_NAME, doi_list)
     except:
         return Response("Failed to push to queue. Delete the recently created article list and create a new one.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

@@ -18,7 +18,7 @@ from django.urls import path, include
 from django.conf.urls import url
 from rest_framework.routers import DefaultRouter
 from api.views import DummyViewSet
-from api import views
+from api import elsevier, views
 from api import pubmed
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -54,5 +54,6 @@ urlpatterns = [
     path('article-list/<int:list_id>/delete-graph', views.delete_graph),
     path('article-list/create/', views.create_article_list),
     path('pubmed-fetch/<path:DOI>', pubmed.pubmed_fetcher_view),
-    path('pubmed-process/<path:DOI>', pubmed.pubmed_processor_view)
+    path('pubmed-process/<path:DOI>', pubmed.pubmed_processor_view),
+    path('elsevier-save/', elsevier.elsevier_fetcher_save)
 ]

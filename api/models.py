@@ -31,7 +31,7 @@ class User(models.Model):
 
 class ArticleList(models.Model):
     userId = models.CharField(max_length=200, blank=False, default='')
-    title = models.CharField(max_length = 100, blank=False, default='Article List')
+    title = models.CharField(max_length = 100)
     created_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(choices=ARTICLE_LIST_STATUS_CHOICES,
                               default="phase_1", max_length=20)
@@ -50,7 +50,7 @@ class ArticleListToDOI(models.Model):
 class Article(models.Model):
     status = models.CharField(choices=ARTICLE_STATUS_CHOICES,
                               default="to_be_fetched", max_length=20)
-    title = models.CharField(max_length = 100, blank=False, default='')
+    title = models.CharField(max_length = 100)
     doi = models.CharField(max_length = 100)
     pubmed_raw_data1 = models.CharField(max_length = 100000, null = True, blank = True)
     pubmed_raw_data2 = models.CharField(max_length = 100000, null = True, blank = True)

@@ -80,7 +80,6 @@ def article_list(request, list_id):
     articles = []
     for doi in dois_in_list:
         article = Article.objects.filter(doi=doi.doi).first()
-        print(article)
         if article is not None:
             articles.append(article) 
 

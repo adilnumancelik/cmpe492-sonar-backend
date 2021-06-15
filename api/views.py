@@ -98,7 +98,6 @@ def create_article_list(request):
     This is the request model:
     {
     "title" : "Name of article list",
-    "user_id" : (Id of the owner user),
     "doi_list": [
         "(DOI 1)",
         "(DOI 2)"
@@ -106,7 +105,6 @@ def create_article_list(request):
         ]
     }
     '''
-    
     doi_list = request.data.get('doi_list')
     number_of_articles = len(doi_list)
     userId = str(request.user)
@@ -126,31 +124,29 @@ def create_article_list(request):
 
     article_list_id = new_article_list.id
     
-    for doi in doi_list:
-        doi_data = {
-            'article_list': article_list_id,
-            'doi': doi
-        }
-        doi_serializer = ArticleListToDOISerializer(data = doi_data)
-        if doi_serializer.is_valid():
-            doi_serializer.save()
-        else:
-            return Response(doi_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    articleToDoisToCreate = []
 
-        article_data = {
-            'doi': doi
-        }
+    for doi in doi_list:
+        doi_data = ArticleListToDOI()
+        doi_data.article_list = new_article_list
+        doi_data.doi = doi
+        articleToDoisToCreate.append(doi_data)
+
+    ArticleListToDOI.objects.bulk_create(articleToDoisToCreate)
+
+    articlesToCreate = []
+    for doi in doi_list:
         existingArticle = Article.objects.filter(doi = doi)
         if len(existingArticle) > 0:
-            print(existingArticle)
             continue
 
-        article_serializer = ArticleSerializer(data = article_data)
-        if article_serializer.is_valid():
-            article_serializer.save()
-        else:
-            return Response(article_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        article_data = Article()
+        article_data.doi = doi
     
+        articlesToCreate.append(article_data)
+
+    Article.objects.bulk_create(articlesToCreate)
+
     # Push the dois to fetcher queue
     try:
         push_to_queue(ELSEVIER_FETCHER_QUEUE_NAME, doi_list)
@@ -177,7 +173,7 @@ def delete_article_list(request, list_id):
     nodes.delete()
     edges.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
 @api_view(['GET'])
 def get_graph(request, list_id):
     article_list_id = list_id

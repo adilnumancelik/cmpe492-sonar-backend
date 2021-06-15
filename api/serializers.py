@@ -75,9 +75,17 @@ class GraphSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
+    title = serializers.SerializerMethodField('get_title')
     class Meta:
         model = Article
         fields = '__all__'
+
+    def get_title(self, obj):
+        if obj.title == "":
+            return None
+        
+        return obj.title
+
 
 class ArticleListItemsResponseSerializer(serializers.ModelSerializer):
     result = serializers.SerializerMethodField('get_result')

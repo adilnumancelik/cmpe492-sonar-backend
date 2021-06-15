@@ -25,7 +25,7 @@ PUBMED_GET_BY_ID_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.
 PUBMED_GET_FULL_RECORD_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={}&rettype=txt"
 NUMBER_OF_TRIALS_ALLOWED = 3
 #TODO These can be added to environmental variables
-FETCHER_QUEUE_NAME = 'fetcher_queue'
+FETCHER_QUEUE_NAME = 'pubmed_fetcher_queue'
 PROCESSOR_QUEUE_NAME = 'processor_queue'
 
 # Pubmed Fethcer Endpoint
@@ -44,6 +44,10 @@ def pubmed_fetcher_view(request, DOI):
     # Increase the number of trials and save the article.
     article.try_count += 1
     article.save()
+
+    if article.raw_data is None:
+        article.status="failed"
+        article.save()
     
     # Search DOI first
     try:
@@ -52,6 +56,10 @@ def pubmed_fetcher_view(request, DOI):
     except:
         if can_try:
             push_to_queue(FETCHER_QUEUE_NAME, doi_list)
+        elif article.raw_data is not None:
+            article.status = "to_be_processed"
+            article.save()
+            push_to_queue(PROCESSOR_QUEUE_NAME, doi_list)
         return Response("Could not search doi.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     # Get article id from search result
@@ -62,6 +70,10 @@ def pubmed_fetcher_view(request, DOI):
     except:
         if can_try:
             push_to_queue(FETCHER_QUEUE_NAME, doi_list)
+        elif article.raw_data is not None:
+            article.status = "to_be_processed"
+            article.save()
+            push_to_queue(PROCESSOR_QUEUE_NAME, doi_list)
         return Response("Could not find article from search result.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Get article raw data.
@@ -73,6 +85,10 @@ def pubmed_fetcher_view(request, DOI):
     except:
         if can_try:
             push_to_queue(FETCHER_QUEUE_NAME, doi_list)
+        elif article.raw_data is not None:
+            article.status = "to_be_processed"
+            article.save()
+            push_to_queue(PROCESSOR_QUEUE_NAME, doi_list)
         return Response("Could not get article raw data.", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     print(len(article_raw))
@@ -86,6 +102,10 @@ def pubmed_fetcher_view(request, DOI):
     # Push the fetched article's doi to Pubmed processor queue.
     push_to_queue(PROCESSOR_QUEUE_NAME, doi_list)
     return Response('Article is fetched from Pubmed.', status=status.HTTP_200_OK)
+
+
+
+
 
 # Pubmed Processor Endpoint
 @api_view(['GET'])

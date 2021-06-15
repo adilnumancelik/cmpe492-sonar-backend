@@ -83,7 +83,7 @@ def article_list(request, list_id):
         if article is not None:
             articles.append(article) 
 
-        serializer = ArticleListItemsResponseSerializer(
+    serializer = ArticleListItemsResponseSerializer(
         articles,
         context = { 'is_successful': True, 'message': ""}
     )

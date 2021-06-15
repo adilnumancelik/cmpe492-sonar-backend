@@ -5,7 +5,7 @@ from django.db.models.query import ModelIterable
 ARTICLE_LIST_STATUS = ["phase_1", "phase_2", "done"]
 ARTICLE_LIST_STATUS_CHOICES = [(ARTICLE_LIST_STATUS[i], str(i)) for i in range(len(ARTICLE_LIST_STATUS))]
 
-ARTICLE_STATUS = ["to_be_fetched", "to_be_processed", "done"]
+ARTICLE_STATUS = ["to_be_fetched", "to_be_processed", "done", "failed"]
 ARTICLE_STATUS_CHOICES = [(ARTICLE_STATUS[i], str(i)) for i in range(len(ARTICLE_STATUS))]
 
 NODE_TYPE = ["author", "article", "topic"]

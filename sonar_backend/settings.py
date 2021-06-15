@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'api',
     'drf_yasg',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -171,3 +173,6 @@ django_heroku.settings(locals())
 # This is for preventing SSL login while working locally on SQLLite.
 options = DATABASES['default'].get('OPTIONS', {})
 options.pop('sslmode', None)
+
+## CORS
+CORS_ALLOW_ALL_ORIGINS = True

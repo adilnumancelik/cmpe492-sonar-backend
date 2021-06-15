@@ -115,6 +115,85 @@ def pubmed_processor_view(request, DOI):
     if article is None:
         return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
 
+
+    if article.raw_data != None:
+        #PROCESS ELSEVIER DATA
+        data = json.loads(article.raw_data)
+        article = data['article']['abstracts-retrieval-response']
+        authors = data['authors']
+        topics = article['subject-areas']['subject-area']
+
+        article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
+
+        for article_to_doi in article_to_dois:
+            article_list = article_to_doi.article_list
+            existing_article_node = Node.objects.filter(article_list = article_list, object_key = DOI, node_type = 'article').first()
+            '''
+            If article node is not none it means that for this specific 
+            article list given article is processed before, so no further processing required.
+            '''
+            if existing_article_node is None:
+                article_node = Node(
+                            node_type='article',
+                            article_list=article_list,
+                            object_key=DOI,
+                            specific_information=json.dumps({})
+                        )
+                article_node.save()
+                
+                #PROCESS AUTHORS
+                for author in authors:
+                    author_data = author['author-retrieval-response'][0]
+                    author_id = author_data['coredata']['dc:identifier'].split(':')[1]
+
+                    author_node = Node.objects.filter(article_list=article_list).filter(node_type='author').filter(object_key=author_id).first()
+
+                    if author_node is None:
+                        author_node = Node(
+                            node_type='author',
+                            article_list=article_list,
+                            object_key=author_id,
+                            specific_information=json.dumps({})
+                        )
+                        author_node.save()
+                    
+                    author_article_edge = Edge(
+                        edge_type="author_of",
+                        from_node=author_node,
+                        to_node=article_node,
+                        specific_information=json.dumps({}),
+                        article_list=article_list
+                    )
+
+                    author_article_edge.save()
+
+                #PROCESS TOPICS
+                for topic in topics:
+                    topic_name = topic['$']
+                    topic_node = Node.objects.filter(article_list=article_list).filter(object_key=topic_name).filter(node_type='topic').first()
+                    if topic_node is None:
+                        topic_node = Node(
+                            node_type='topic',
+                            article_list=article_list,
+                            object_key=topic_name,
+                            specific_information=json.dumps({})
+                        )
+                        topic_node.save()
+                    
+                    topic_article_edge = Edge(
+                        edge_type="topic_of",
+                        from_node=topic_node,
+                        to_node=article_node,
+                        specific_information=json.dumps({}),
+                        article_list=article_list
+                    )
+                    topic_article_edge.save()
+
+        return Response(status=status.HTTP_200_OK)
+
+
+
+
     raw_1 = article.pubmed_raw_data1
     raw_2 = article.pubmed_raw_data2
     

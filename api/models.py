@@ -75,7 +75,6 @@ class Node(models.Model):
 
 class Edge(models.Model):
     edge_type = models.CharField(choices=EDGE_TYPE_CHOICES, default="coauthor", max_length=50)
-    edge_type = models.CharField(default="", max_length=100)
     from_node = models.ForeignKey(Node, related_name='out_edge', on_delete=models.CASCADE)
     to_node = models.ForeignKey(Node, related_name='in_edge', on_delete=models.CASCADE)
     article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)

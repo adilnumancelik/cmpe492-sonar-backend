@@ -20,6 +20,7 @@ from rest_framework.permissions import AllowAny
 
 
 PUBMED_FETCHER_QUEUE = 'pubmed_fetcher_queue'
+PROCESSOR_QUEUE_NAME = 'processor_queue'
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -37,10 +38,12 @@ def elsevier_fetcher_save(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if fetch_status == 200:
+        article.status="to_be_processed"
         article.raw_data = result
         article.fetched_date = datetime.now()
         article.save()
-    
-    push_to_queue(PUBMED_FETCHER_QUEUE, [doi])
+        push_to_queue(PROCESSOR_QUEUE_NAME, [doi])
+    else:
+        push_to_queue(PUBMED_FETCHER_QUEUE, [doi])
 
     return Response(status=status.HTTP_200_OK)

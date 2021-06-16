@@ -173,10 +173,6 @@ def pubmed_processor_view(request, DOI):
                             specific_information=json.dumps({
                                 'id': author_id,
                                 'full_name': author_data['author-profile']['preferred-name']['indexed-name'],
-                                'current_affiliation':{
-                                    'id': author_data['author-profile']['affiliation-history']['affiliation'][0]["@affiliation-id"],
-                                    'name': author_data['author-profile']['affiliation-history']['affiliation'][0]["ip-doc"]['afdispname']
-                                },
                                 'citation_count': author_data['coredata']['citation-count'],
                                 'cited_by_count': author_data['coredata']['cited-by-count'],
                                 'document_count': author_data['coredata']['document-count']

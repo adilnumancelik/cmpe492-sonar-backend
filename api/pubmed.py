@@ -150,7 +150,11 @@ def pubmed_processor_view(request, DOI):
                             node_type='article',
                             article_list=article_list,
                             object_key=DOI,
-                            specific_information=json.dumps({})
+                            specific_information=json.dumps({
+                                'doi': DOI,
+                                'title': article['coredata']['dc:title'],
+                                'cited-by_count': article['coredata']["citedby-count"]
+                            })
                         )
                 article_node.save()
                 
@@ -167,6 +171,7 @@ def pubmed_processor_view(request, DOI):
                             article_list=article_list,
                             object_key=author_id,
                             specific_information=json.dumps({
+                                'id': author_id,
                                 'full_name': author_data['author-profile']['preferred-name']['indexed-name'],
                                 'current_affiliation':{
                                     'id': author_data['author-profile']['affiliation-current']['affiliation']["@affiliation-id"],

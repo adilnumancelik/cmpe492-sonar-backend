@@ -115,6 +115,7 @@ def pubmed_processor_view(request, DOI):
     if article_obj is None:
         return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
 
+    article_obj.status="done"
     article_obj.processed_date = datetime.datetime.now()
     article_obj.save()
 

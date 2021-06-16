@@ -166,7 +166,16 @@ def pubmed_processor_view(request, DOI):
                             node_type='author',
                             article_list=article_list,
                             object_key=author_id,
-                            specific_information=json.dumps({})
+                            specific_information=json.dumps({
+                                'full_name': author_data['author-profile']['preferred-name']['indexed-name'],
+                                'current_affiliation':{
+                                    'id': author_data['author-profile']['affiliation-current']['affiliation']["@affiliation-id"],
+                                    'name': author_data['author-profile']['affiliation-current']['affiliation']["ip-doc"]['afdispname']
+                                },
+                                'citation_count': author_data['coredata']['citation-count'],
+                                'cited_by_count': author_data['coredata']['cited-by-count'],
+                                'document_count': author_data['coredata']['document-count']
+                            })
                         )
                         author_node.save()
                     

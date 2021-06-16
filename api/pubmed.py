@@ -111,17 +111,23 @@ def pubmed_fetcher_view(request, DOI):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def pubmed_processor_view(request, DOI):
-    article = Article.objects.filter(doi = DOI).first()
-    if article is None:
+    article_obj = Article.objects.filter(doi = DOI).first()
+    if article_obj is None:
         return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
 
+    article_obj.processed_date = datetime.datetime.now()
+    article_obj.save()
 
-    if article.raw_data != None:
+    if article_obj.raw_data != None:
         #PROCESS ELSEVIER DATA
-        data = json.loads(article.raw_data)
+
+        data = json.loads(article_obj.raw_data)
         article = data['article']['abstracts-retrieval-response']
         authors = data['authors']
         topics = article['subject-areas']['subject-area']
+
+        article_obj.title=article['coredata']['dc:title']
+        article_obj.save()
 
         article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
 
@@ -133,6 +139,12 @@ def pubmed_processor_view(request, DOI):
             article list given article is processed before, so no further processing required.
             '''
             if existing_article_node is None:
+
+                article_list.processed_count += 1 
+                if article_list.processed_count == article_list.number_of_articles:
+                    article_list.status="done"
+                article_list.save()
+
                 article_node = Node(
                             node_type='article',
                             article_list=article_list,
@@ -194,8 +206,8 @@ def pubmed_processor_view(request, DOI):
 
 
 
-    raw_1 = article.pubmed_raw_data1
-    raw_2 = article.pubmed_raw_data2
+    raw_1 = article_obj.pubmed_raw_data1
+    raw_2 = article_obj.pubmed_raw_data2
     
     root = ET.fromstring(raw_1)
     root2 = ET.fromstring(raw_2)
@@ -256,6 +268,12 @@ def pubmed_processor_view(request, DOI):
     for article_to_doi in article_to_dois:
         existing_article_node = Node.objects.filter(article_list = article_to_doi.article_list, object_key = DOI, node_type = 'article').first()
         if existing_article_node is None:
+            article_list = article_to_doi.article_list
+            article_list.processed_count += 1 
+            if article_list.processed_count == article_list.number_of_articles:
+                article_list.status="done"
+            article_list.save()
+
             node_data = {
                 'node_type': 'article',
                 'article_list': article_to_doi.article_list.pk,
@@ -366,9 +384,8 @@ def pubmed_processor_view(request, DOI):
                 else:
                     return Response(edge_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    article.title = title
-    article.created_date = pubdate
-    article.processed_date = datetime.datetime.now()
-    article.save()
+    article_obj.title = title
+    article_obj.processed_date = datetime.datetime.now()
+    article_obj.save()
 
     return Response(DOI, status=status.HTTP_200_OK)

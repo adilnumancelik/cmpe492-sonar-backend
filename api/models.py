@@ -71,6 +71,7 @@ class Node(models.Model):
     article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     object_key = models.CharField(max_length=200, default="nokey")
     specific_information = models.CharField(max_length = 10000)
+    created_date = models.DateTimeField(null=True)
 
 
 class Edge(models.Model):
@@ -79,3 +80,4 @@ class Edge(models.Model):
     to_node = models.ForeignKey(Node, related_name='in_edge', on_delete=models.CASCADE)
     article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     specific_information = models.CharField(max_length = 10000)
+    created_date = models.DateTimeField(null=True)

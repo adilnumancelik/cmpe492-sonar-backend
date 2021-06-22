@@ -131,7 +131,7 @@ def pubmed_processor_view(request, DOI):
             pubdate = article['coredata']['prism:coverDate']
             pubdate = datetime.datetime(int(pubdate[:4]),int(pubdate[6:7]),int(pubdate[9:10]))
         except:
-            pubdate = pubdate = datetime.datetime(1900,1,1)
+            pubdate = None
 
         article_obj.title=article['coredata']['dc:title']
         article_obj.created_date = pubdate
@@ -250,7 +250,7 @@ def pubmed_processor_view(request, DOI):
             day = root2.findall("./PubmedArticle/MedlineCitation/DateCompleted/Day")[0].text
             pubdate = datetime.datetime(int(year), int(month), int(day))
         except:
-            pubdate = datetime.datetime(1900,1,1)
+            pubdate = None
     
 
     # Get article title. If this is not possible assign default date. 

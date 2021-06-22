@@ -78,7 +78,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField('get_title')
     class Meta:
         model = Article
-        fields = '__all__'
+        fields = ('title','status','doi', 'created_date', 'fetched_date', 'processed_date', 'try_count', 'other_stuff')
 
     def get_title(self, obj):
         if obj.title == "":

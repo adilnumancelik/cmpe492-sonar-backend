@@ -127,7 +127,14 @@ def pubmed_processor_view(request, DOI):
         authors = data['authors']
         topics = article['subject-areas']['subject-area']
 
+        try:
+            pubdate = article['coredata']['prism:coverDate']
+            pubdate = datetime.datetime(int(pubdate[:4]),int(pubdate[6:7]),int(pubdate[9:10]))
+        except:
+            pubdate = pubdate = datetime.datetime(1900,1,1)
+
         article_obj.title=article['coredata']['dc:title']
+        article_obj.created_date = pubdate
         article_obj.save()
 
         article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
@@ -154,7 +161,8 @@ def pubmed_processor_view(request, DOI):
                                 'doi': DOI,
                                 'title': article['coredata']['dc:title'],
                                 'cited-by_count': article['coredata']["citedby-count"]
-                            })
+                            }),
+                            created_date=pubdate
                         )
                 article_node.save()
                 
@@ -176,7 +184,8 @@ def pubmed_processor_view(request, DOI):
                                 'citation_count': author_data['coredata']['citation-count'],
                                 'cited_by_count': author_data['coredata']['cited-by-count'],
                                 'document_count': author_data['coredata']['document-count']
-                            })
+                            }),
+                            created_date=pubdate
                         )
                         author_node.save()
                     
@@ -185,7 +194,8 @@ def pubmed_processor_view(request, DOI):
                         from_node=author_node,
                         to_node=article_node,
                         specific_information=json.dumps({}),
-                        article_list=article_list
+                        article_list=article_list,
+                        created_date=pubdate
                     )
 
                     author_article_edge.save()
@@ -199,7 +209,8 @@ def pubmed_processor_view(request, DOI):
                             node_type='topic',
                             article_list=article_list,
                             object_key=topic_name,
-                            specific_information=json.dumps({})
+                            specific_information=json.dumps({}),
+                            created_date=pubdate
                         )
                         topic_node.save()
                     
@@ -208,10 +219,11 @@ def pubmed_processor_view(request, DOI):
                         from_node=topic_node,
                         to_node=article_node,
                         specific_information=json.dumps({}),
-                        article_list=article_list
+                        article_list=article_list,
+                        created_date=pubdate
                     )
                     topic_article_edge.save()
-
+        
         return Response(status=status.HTTP_200_OK)
 
 
@@ -219,7 +231,9 @@ def pubmed_processor_view(request, DOI):
 
     raw_1 = article_obj.pubmed_raw_data1
     raw_2 = article_obj.pubmed_raw_data2
-    
+    if raw_1 is None or raw_2 is None:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
     root = ET.fromstring(raw_1)
     root2 = ET.fromstring(raw_2)
 
@@ -238,7 +252,7 @@ def pubmed_processor_view(request, DOI):
         except:
             pubdate = datetime.datetime(1900,1,1)
     
-    
+
     # Get article title. If this is not possible assign default date. 
     try:
         title = root.findall("./DocSum/Item/[@Name='Title']")[0].text   
@@ -289,7 +303,8 @@ def pubmed_processor_view(request, DOI):
                 'node_type': 'article',
                 'article_list': article_to_doi.article_list.pk,
                 'object_key': DOI,
-                'specific_information': json.dumps({})
+                'specific_information': json.dumps({}),
+                'created_date': pubdate
             }
             node_serializer = NodeSerializer(data = node_data)
 
@@ -313,7 +328,8 @@ def pubmed_processor_view(request, DOI):
                     'node_type': 'author',
                     'article_list': article_to_doi.article_list.pk,
                     'object_key': author,
-                    'specific_information': json.dumps({})
+                    'specific_information': json.dumps({}),
+                    'created_date': pubdate
                 }
                 node_serializer = NodeSerializer(data = node_data)
                 if node_serializer.is_valid():
@@ -336,7 +352,8 @@ def pubmed_processor_view(request, DOI):
                     'node_type': 'topic',
                     'article_list': article_to_doi.article_list.pk,
                     'object_key': topic,
-                    'specific_information': json.dumps({})
+                    'specific_information': json.dumps({}),
+                    'created_date': pubdate
                 }
                 node_serializer = NodeSerializer(data = node_data)
                 if node_serializer.is_valid():
@@ -362,7 +379,8 @@ def pubmed_processor_view(request, DOI):
                         'from_node': author_node.pk,
                         'to_node':article_node.pk,
                         'article_list':article_to_doi.article_list.pk,
-                        'specific_information': json.dumps({ 'author_name': author, 'DOI': DOI })
+                        'specific_information': json.dumps({ 'author_name': author, 'DOI': DOI }),
+                        'created_date': pubdate
                     }
                 edge_serializer = EdgeSerializer(data = edge_data)
                 if edge_serializer.is_valid():
@@ -387,7 +405,8 @@ def pubmed_processor_view(request, DOI):
                     'from_node': article_node.pk,
                     'to_node':topic_node.pk,
                     'article_list':article_to_doi.article_list.pk,
-                    'specific_information': json.dumps({ 'DOI': DOI, 'topic_name': topic })
+                    'specific_information': json.dumps({ 'DOI': DOI, 'topic_name': topic }),
+                    'created_date': pubdate
                 }
                 edge_serializer = EdgeSerializer(data = edge_data)
                 if edge_serializer.is_valid():
@@ -395,6 +414,7 @@ def pubmed_processor_view(request, DOI):
                 else:
                     return Response(edge_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    article_obj.created_date = pubdate
     article_obj.title = title
     article_obj.processed_date = datetime.datetime.now()
     article_obj.save()

@@ -42,6 +42,12 @@ def elsevier_fetcher_save(request):
         article.raw_data = result
         article.fetched_date = datetime.now()
         article.save()
+        
+        article_to_dois = ArticleListToDOI.objects.filter(doi=doi)
+        for to_doi in article_to_dois:
+            to_doi.status = "to_be_processed"
+            to_doi.save()
+
         push_to_queue(PROCESSOR_QUEUE_NAME, [doi])
     else:
         push_to_queue(PUBMED_FETCHER_QUEUE, [doi])

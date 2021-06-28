@@ -45,7 +45,9 @@ class ArticleList(models.Model):
 class ArticleListToDOI(models.Model):
     article_list = models.ForeignKey(ArticleList, on_delete=models.CASCADE, null=True)
     doi = models.CharField(max_length = 100)
-
+    status = models.CharField(choices=ARTICLE_STATUS_CHOICES,
+                              default="to_be_fetched", max_length=20)
+    processed_date = models.DateTimeField(null=True)
 
 class Article(models.Model):
     status = models.CharField(choices=ARTICLE_STATUS_CHOICES,

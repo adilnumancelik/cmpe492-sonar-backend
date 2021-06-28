@@ -15,6 +15,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from api.utils import *
+import time
 
 ELSEVIER_FETCHER_QUEUE_NAME = 'elsevier_fetcher_queue'
 
@@ -51,7 +52,6 @@ def requires_scope(required_scope):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def main_view(request):
-    token = get_token_auth_header(request)
     return Response('Hello World!')
 
 
@@ -78,9 +78,12 @@ def article_list(request, list_id):
     
     dois_in_list = ArticleListToDOI.objects.filter(article_list=article_list).all()
     articles = []
+
     for doi in dois_in_list:
         article = Article.objects.filter(doi=doi.doi).first()
         if article is not None:
+            article.status = doi.status
+            article.processed_date = doi.processed_date
             articles.append(article) 
 
     serializer = ArticleListItemsResponseSerializer(
@@ -124,27 +127,24 @@ def create_article_list(request):
     article_list_id = new_article_list.id
     
     articleToDoisToCreate = []
-
+    articlesToCreate = []
     for doi in doi_list:
         doi_data = ArticleListToDOI()
         doi_data.article_list = new_article_list
         doi_data.doi = doi
-        articleToDoisToCreate.append(doi_data)
 
-    ArticleListToDOI.objects.bulk_create(articleToDoisToCreate)
-
-    articlesToCreate = []
-    for doi in doi_list:
         existingArticle = Article.objects.filter(doi = doi)
         if len(existingArticle) > 0:
-            continue
+            doi_data.status = existingArticle.first().status
+        else:
+            article_data = Article()
+            article_data.doi = doi
+            articlesToCreate.append(article_data)
 
-        article_data = Article()
-        article_data.doi = doi
-    
-        articlesToCreate.append(article_data)
+        articleToDoisToCreate.append(doi_data)
 
     Article.objects.bulk_create(articlesToCreate)
+    ArticleListToDOI.objects.bulk_create(articleToDoisToCreate)
 
     # Push the dois to fetcher queue
     try:

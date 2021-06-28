@@ -115,7 +115,6 @@ def pubmed_processor_view(request, DOI):
     if article_obj is None:
         return Response("There is no article in the system with this doi.", status=status.HTTP_404_NOT_FOUND)
 
-    article_obj.status="done"
     article_obj.processed_date = datetime.datetime.now()
     article_obj.save()
 
@@ -138,6 +137,10 @@ def pubmed_processor_view(request, DOI):
         article_obj.save()
 
         article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
+        for to_doi in article_to_dois: 
+            to_doi.status="done"
+            to_doi.processed_date = datetime.datetime.now()
+            to_doi.save()
 
         for article_to_doi in article_to_dois:
             article_list = article_to_doi.article_list
@@ -413,6 +416,12 @@ def pubmed_processor_view(request, DOI):
                     edge_serializer.save()
                 else:
                     return Response(edge_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    article_to_dois = ArticleListToDOI.objects.filter(doi = DOI)
+    for to_doi in article_to_dois: 
+        to_doi.status="done"
+        to_doi.processed_date = datetime.datetime.now()
+        to_doi.save()
     
     article_obj.created_date = pubdate
     article_obj.title = title

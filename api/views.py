@@ -87,7 +87,7 @@ def article_list(request, list_id):
             articles.append(article) 
 
     serializer = ArticleListItemsResponseSerializer(
-        articles,
+        {'articles': articles, 'article_list': article_list},
         context = { 'is_successful': True, 'message': ""}
     )
 

@@ -97,9 +97,10 @@ class ArticleListItemsResponseSerializer(serializers.ModelSerializer):
 
     def get_result(self, obj):
         data = []
-        for article in obj:
+        for article in obj['articles']:
             data.append(ArticleSerializer(article).data)
-        return data
+        return {'articles': data, 'article_list': ArticleListSerializer(obj['article_list']).data}
+            # data
 
     def get_status(self, obj):
         is_successful = self.context.get('is_successful')
